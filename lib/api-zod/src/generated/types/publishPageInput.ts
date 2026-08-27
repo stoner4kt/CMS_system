@@ -5,7 +5,8 @@
  * API for the Site Studio multi-client website platform
  * OpenAPI spec version: 0.1.0
  */
+import type { PublishPageInputStatus } from './publishPageInputStatus';
 
-export interface HealthStatus {
-  status: string;
+export interface PublishPageInput {
+  status: PublishPageInputStatus;
 }

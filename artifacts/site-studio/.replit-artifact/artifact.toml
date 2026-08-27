@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Site Studio"
+description = "A reusable multi-client website platform with public template previews and a self-serve admin workspace for pages, content blocks, media, SEO, and brand settings."
+version = "1.0.0"
+id = "artifacts/site-studio"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20614
+
+[services.development]
+run = "pnpm --filter @workspace/site-studio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/site-studio", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/site-studio/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20614"
+BASE_PATH = "/"

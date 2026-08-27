@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
-}
+export type PageStatus = typeof PageStatus[keyof typeof PageStatus];
+
+
+export const PageStatus = {
+  draft: 'draft',
+  published: 'published',
+} as const;

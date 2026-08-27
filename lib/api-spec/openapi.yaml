@@ -3,20 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API for the Site Studio multi-client website platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Admin dashboard summaries
+  - name: sites
+    description: Site and brand settings
+  - name: pages
+    description: Website pages and content blocks
+  - name: media
+    description: Cloudinary-backed media library
+  - name: submissions
+    description: Public contact form submissions
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +33,431 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /sites/{siteId}:
+    get:
+      operationId: getSite
+      tags: [sites]
+      summary: Get site settings
+      parameters:
+        - $ref: "#/components/parameters/SiteId"
+      responses:
+        "200":
+          description: Site settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateSite
+      tags: [sites]
+      summary: Update site settings
+      parameters:
+        - $ref: "#/components/parameters/SiteId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteUpdate"
+      responses:
+        "200":
+          description: Updated site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+  /pages:
+    get:
+      operationId: listPages
+      tags: [pages]
+      summary: List pages
+      responses:
+        "200":
+          description: Pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Page"
+    post:
+      operationId: createPage
+      tags: [pages]
+      summary: Create a page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageInput"
+      responses:
+        "201":
+          description: Created page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+  /pages/{pageId}:
+    get:
+      operationId: getPage
+      tags: [pages]
+      summary: Get a page
+      parameters:
+        - $ref: "#/components/parameters/PageId"
+      responses:
+        "200":
+          description: Page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePage
+      tags: [pages]
+      summary: Update a page
+      parameters:
+        - $ref: "#/components/parameters/PageId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageUpdate"
+      responses:
+        "200":
+          description: Updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    delete:
+      operationId: deletePage
+      tags: [pages]
+      summary: Delete a page
+      parameters:
+        - $ref: "#/components/parameters/PageId"
+      responses:
+        "204":
+          description: Page deleted
+  /pages/{pageId}/publish:
+    post:
+      operationId: publishPage
+      tags: [pages]
+      summary: Publish or unpublish a page
+      parameters:
+        - $ref: "#/components/parameters/PageId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishPageInput"
+      responses:
+        "200":
+          description: Updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+  /media:
+    get:
+      operationId: listMedia
+      tags: [media]
+      summary: List media assets
+      responses:
+        "200":
+          description: Media assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Media"
+    post:
+      operationId: createMedia
+      tags: [media]
+      summary: Register a Cloudinary media asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaInput"
+      responses:
+        "201":
+          description: Created media asset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Media"
+  /media/{mediaId}:
+    delete:
+      operationId: deleteMedia
+      tags: [media]
+      summary: Delete a media asset
+      parameters:
+        - $ref: "#/components/parameters/MediaId"
+      responses:
+        "204":
+          description: Media deleted
+  /submissions:
+    get:
+      operationId: listSubmissions
+      tags: [submissions]
+      summary: List contact submissions
+      responses:
+        "200":
+          description: Contact submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContactSubmission"
+    post:
+      operationId: createSubmission
+      tags: [submissions]
+      summary: Submit a public contact form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactSubmissionInput"
+      responses:
+        "201":
+          description: Submission received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactSubmission"
 components:
+  parameters:
+    SiteId:
+      name: siteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageId:
+      name: pageId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MediaId:
+      name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    Site:
+      type: object
+      required: [id, name, slug, template, settings]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        template:
+          type: string
+          enum: [modern, classic, bold, minimal, custom]
+        settings:
+          $ref: "#/components/schemas/SiteSettings"
+        updatedAt: { type: string, format: date-time }
+    SiteSettings:
+      type: object
+      required: [primaryColor, accentColor, fontFamily]
+      properties:
+        logoUrl: { type: ["string", "null"], format: uri }
+        faviconUrl: { type: ["string", "null"], format: uri }
+        primaryColor: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
+        accentColor: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
+        fontFamily: { type: string }
+        contactEmail: { type: ["string", "null"], format: email }
+        phone: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        ga4MeasurementId: { type: ["string", "null"], pattern: "^G-[A-Z0-9]+$" }
+        socialLinks:
+          type: object
+          additionalProperties: { type: string, format: uri }
+    SiteUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        template:
+          type: string
+          enum: [modern, classic, bold, minimal, custom]
+        settings:
+          $ref: "#/components/schemas/SiteSettings"
+    Block:
+      type: object
+      required: [id, type, data]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [hero, text-image, features, testimonials, faq, cta, gallery, contact, rich-text, spacer]
+        data:
+          type: object
+          additionalProperties: true
+    Page:
+      type: object
+      required: [id, title, slug, status, sortOrder, blocks, seo]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        slug: { type: string }
+        status:
+          type: string
+          enum: [draft, published]
+        sortOrder: { type: integer }
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+        seo:
+          $ref: "#/components/schemas/PageSeo"
+        updatedAt: { type: string, format: date-time }
+    PageSeo:
+      type: object
+      required: [title, description]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        ogImageUrl: { type: ["string", "null"], format: uri }
+        canonicalUrl: { type: ["string", "null"], format: uri }
+    PageInput:
+      type: object
+      required: [title, slug]
+      properties:
+        title: { type: string, minLength: 1 }
+        slug: { type: string, minLength: 1, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        status:
+          type: string
+          enum: [draft, published]
+        sortOrder: { type: integer }
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+        seo:
+          $ref: "#/components/schemas/PageSeo"
+    PageUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        slug: { type: string, minLength: 1, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        sortOrder: { type: integer }
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+        seo:
+          $ref: "#/components/schemas/PageSeo"
+    PublishPageInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [draft, published]
+    Media:
+      type: object
+      required: [id, name, publicId, url, resourceType, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        publicId: { type: string }
+        url: { type: string, format: uri }
+        resourceType: { type: string, enum: [image, video, raw] }
+        width: { type: ["integer", "null"] }
+        height: { type: ["integer", "null"] }
+        createdAt: { type: string, format: date-time }
+    MediaInput:
+      type: object
+      required: [name, publicId, url, resourceType]
+      properties:
+        name: { type: string, minLength: 1 }
+        publicId: { type: string, minLength: 1 }
+        url: { type: string, format: uri }
+        resourceType: { type: string, enum: [image, video, raw] }
+        width: { type: integer }
+        height: { type: integer }
+    ContactSubmission:
+      type: object
+      required: [id, name, email, message, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        message: { type: string }
+        status:
+          type: string
+          enum: [new, read, archived]
+        createdAt: { type: string, format: date-time }
+    ContactSubmissionInput:
+      type: object
+      required: [name, email, message]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        message: { type: string, minLength: 1 }
+    DashboardSummary:
+      type: object
+      required: [pages, publishedPages, media, submissions, recentActivity]
+      properties:
+        pages: { type: integer }
+        publishedPages: { type: integer }
+        media: { type: integer }
+        submissions: { type: integer }
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+    ActivityItem:
+      type: object
+      required: [id, label, detail, timestamp]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        detail: { type: string }
+        timestamp: { type: string, format: date-time }

@@ -1,0 +1,122 @@
+Build a complete, production-ready Next.js 15 (App Router) website template that will be used as a reusable starter for multiple clients. Each client will receive their own independent GitHub repo and their own Supabase project. The system must be SEO-friendly, allow clients to manage multi-page content themselves, support template selection, media uploads via Cloudinary, Google Analytics 4 tags, and be deployable on Cloudflare Pages (not Vercel).
+
+### Core Goals
+- Fully self-manageable by non-technical clients via a clean admin dashboard
+- Excellent SEO out of the box (SSG + on-demand revalidation where possible, proper metadata, sitemap, robots.txt, structured data)
+- Template system: 4–5 high-quality pre-built templates + ability to create a “Custom” template by migrating an existing design
+- Clients can upload their own images/media via Cloudinary
+- Clients can add their own Google Analytics 4 Measurement ID
+- Multi-page sites with block-based content
+- Production-ready code quality, security, error handling, and performance
+- Deployable on Cloudflare Pages using the official Next.js on Cloudflare adapter (or OpenNext)
+
+### Tech Stack (strict)
+- Next.js 15 (App Router) + TypeScript
+- Tailwind CSS + shadcn/ui
+- Supabase (Auth + PostgreSQL + Row Level Security)
+- Cloudinary (image/media uploads + transformations)
+- Zustand or React Context for admin state (lightweight)
+- Zod for validation
+- Lucide React for icons
+- Deploy target: Cloudflare Pages
+
+### Essential Features (MVP)
+
+1. **Public Website**
+   - Dynamic multi-page rendering based on content from Supabase
+   - Template system: Modern, Classic, Bold, Minimal, and Custom
+   - Global site settings (logo, colors, fonts, contact info, social links, favicon)
+   - Block-based pages (Hero, Text + Image, Features/Grid, Testimonials, FAQ, CTA, Gallery, Contact Form, Rich Text, Spacer)
+   - Per-page SEO fields: title, meta description, Open Graph image, canonical
+   - Automatic sitemap.xml and robots.txt
+   - Google Analytics 4 support (client pastes Measurement ID in admin → script injected only if present)
+   - Fast Core Web Vitals, proper semantic HTML, responsive design
+   - Contact form that stores submissions in Supabase (optional email notification later)
+
+2. **Admin Dashboard** (protected by Supabase Auth)
+   - Login / Logout / Password reset
+   - Dashboard overview
+   - Site Settings: logo upload, brand colors, fonts, contact details, social links, GA4 ID, favicon
+   - Template Selector: switch between the 5 templates (live preview preferred)
+   - Pages Manager: create, edit, reorder, publish/unpublish, delete pages
+   - Page Editor: visual block editor (add/remove/reorder blocks, edit content inside each block)
+   - Media Library: upload images to Cloudinary, browse, delete, copy URL
+   - SEO settings per page
+   - Simple preview mode
+
+3. **Template System**
+   - Each template has its own layout, header, footer, and section styling
+   - Global theme tokens (colors, border-radius, fonts) stored in Supabase and applied via CSS variables
+   - “Custom” template: designed so a developer can easily map an existing client design into it (clear component structure and documentation)
+
+4. **Media**
+   - All image uploads go through Cloudinary (signed uploads from the client side or via API route)
+   - Store Cloudinary public_id and URLs in Supabase
+   - Next.js Image component with Cloudinary loader for optimization
+
+5. **Database (Supabase)**
+   Provide complete SQL schema with RLS policies for:
+   - profiles
+   - sites (or site_settings) – single row per project
+   - pages
+   - page_blocks / sections
+   - media
+   - contact_submissions
+   Proper indexes, updated_at triggers, and security (only authenticated admin can write).
+
+6. **Security & Production Quality**
+   - Strict RLS
+   - Environment variables properly typed
+   - Input validation with Zod
+   - Protected admin routes
+   - Error boundaries and loading states
+   - Clean folder structure
+   - README with full setup instructions
+
+### Project Structure
+Use a clean, scalable structure:
+- /app (App Router)
+- /app/(public) – public pages
+- /app/(admin) – protected admin
+- /components (ui, blocks, templates, admin)
+- /lib (supabase, cloudinary, utils)
+- /types
+- /templates (one folder per template)
+
+### Cloudflare Deployment Requirements
+- Configure for Cloudflare Pages
+- Use the recommended adapter for Next.js on Cloudflare
+- Handle image optimization appropriately (Cloudinary preferred)
+- On-demand revalidation strategy that works with Cloudflare (or clear fallback to ISR/SSG)
+- Environment variables documented for Cloudflare
+
+### Deliverables You Must Generate
+1. Complete working codebase
+2. Full Supabase SQL schema + RLS policies (ready to run)
+3. All environment variables needed (.env.example)
+4. Cloudinary upload setup (signed uploads)
+5. Step-by-step setup guide (see below)
+6. README.md with architecture overview, how templates work, and how to create a new Custom template from an existing design
+7. Seed data for one example site so the project works immediately after setup
+
+### Step-by-Step Setup Guide (include this in the README)
+Write a clear, numbered guide covering:
+
+1. Create a new Supabase project
+2. Run the provided SQL schema
+3. Create a Cloudinary account and get API keys
+4. Clone the repo / create new project from this template
+5. Fill in all environment variables
+6. Set up Supabase Auth (enable Email provider)
+7. Create the first admin user
+8. Run the project locally
+9. Deploy to Cloudflare Pages (detailed steps including build settings, environment variables, and custom domain)
+10. How the client will log in and start editing
+11. How to switch templates
+12. How to migrate an existing design into the Custom template (high-level developer instructions)
+13. How to add a new page and blocks
+14. How to connect a custom domain on Cloudflare
+
+Make the entire system production-ready, clean, well-commented, and easy for a developer to hand over to a client after initial setup and template customization.
+
+Start by generating the complete file structure and core files, then implement features systematically.
