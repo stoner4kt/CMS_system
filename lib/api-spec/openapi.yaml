@@ -45,6 +45,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List sites for the current user
+      responses:
+        "200":
+          description: Sites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Site"
+    post:
+      operationId: createSite
+      tags: [sites]
+      summary: Create a site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteInput"
+      responses:
+        "201":
+          description: Created site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
   /sites/{siteId}:
     get:
       operationId: getSite
@@ -337,6 +368,17 @@ components:
         socialLinks:
           type: object
           additionalProperties: { type: string, format: uri }
+    SiteInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string, minLength: 1 }
+        slug: { type: string, minLength: 1, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        template:
+          type: string
+          enum: [modern, classic, bold, minimal, custom]
+        settings:
+          $ref: "#/components/schemas/SiteSettings"
     SiteUpdate:
       type: object
       properties:

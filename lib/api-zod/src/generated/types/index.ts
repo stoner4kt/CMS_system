@@ -31,6 +31,8 @@ export * from './pageUpdate';
 export * from './publishPageInput';
 export * from './publishPageInputStatus';
 export * from './site';
+export * from './siteInput';
+export * from './siteInputTemplate';
 export * from './siteSettings';
 export * from './siteSettingsSocialLinks';
 export * from './siteTemplate';

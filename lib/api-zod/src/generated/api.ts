@@ -34,6 +34,92 @@ export const GetDashboardResponse = zod.object({
 
 
 /**
+ * @summary List sites for the current user
+ */
+export const listSitesResponseSettingsPrimaryColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const listSitesResponseSettingsAccentColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const listSitesResponseSettingsGa4MeasurementIdRegExp = new RegExp('^G-[A-Z0-9]+$');
+
+
+export const ListSitesResponseItem = zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "template": zod.enum(['modern', 'classic', 'bold', 'minimal', 'custom']),
+  "settings": zod.object({
+  "logoUrl": zod.url().nullish(),
+  "faviconUrl": zod.url().nullish(),
+  "primaryColor": zod.string().regex(listSitesResponseSettingsPrimaryColorRegExp),
+  "accentColor": zod.string().regex(listSitesResponseSettingsAccentColorRegExp),
+  "fontFamily": zod.string(),
+  "contactEmail": zod.email().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "ga4MeasurementId": zod.string().regex(listSitesResponseSettingsGa4MeasurementIdRegExp).nullish(),
+  "socialLinks": zod.record(zod.string(), zod.url()).optional()
+}),
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
+})
+export const ListSitesResponse = zod.array(ListSitesResponseItem)
+
+
+/**
+ * @summary Create a site
+ */
+
+
+
+export const createSiteBodySlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+export const createSiteBodySettingsPrimaryColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const createSiteBodySettingsAccentColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const createSiteBodySettingsGa4MeasurementIdRegExp = new RegExp('^G-[A-Z0-9]+$');
+
+
+export const CreateSiteBody = zod.object({
+  "name": zod.string().min(1),
+  "slug": zod.string().min(1).regex(createSiteBodySlugRegExp),
+  "template": zod.enum(['modern', 'classic', 'bold', 'minimal', 'custom']).optional(),
+  "settings": zod.object({
+  "logoUrl": zod.url().nullish(),
+  "faviconUrl": zod.url().nullish(),
+  "primaryColor": zod.string().regex(createSiteBodySettingsPrimaryColorRegExp),
+  "accentColor": zod.string().regex(createSiteBodySettingsAccentColorRegExp),
+  "fontFamily": zod.string(),
+  "contactEmail": zod.email().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "ga4MeasurementId": zod.string().regex(createSiteBodySettingsGa4MeasurementIdRegExp).nullish(),
+  "socialLinks": zod.record(zod.string(), zod.url()).optional()
+}).optional()
+})
+
+export const createSiteResponseSettingsPrimaryColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const createSiteResponseSettingsAccentColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const createSiteResponseSettingsGa4MeasurementIdRegExp = new RegExp('^G-[A-Z0-9]+$');
+
+
+export const CreateSiteResponse = zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "template": zod.enum(['modern', 'classic', 'bold', 'minimal', 'custom']),
+  "settings": zod.object({
+  "logoUrl": zod.url().nullish(),
+  "faviconUrl": zod.url().nullish(),
+  "primaryColor": zod.string().regex(createSiteResponseSettingsPrimaryColorRegExp),
+  "accentColor": zod.string().regex(createSiteResponseSettingsAccentColorRegExp),
+  "fontFamily": zod.string(),
+  "contactEmail": zod.email().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "ga4MeasurementId": zod.string().regex(createSiteResponseSettingsGa4MeasurementIdRegExp).nullish(),
+  "socialLinks": zod.record(zod.string(), zod.url()).optional()
+}),
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
+})
+
+
+/**
  * @summary Get site settings
  */
 
