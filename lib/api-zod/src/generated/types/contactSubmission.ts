@@ -13,5 +13,5 @@ export interface ContactSubmission {
   email: string;
   message: string;
   status: ContactSubmissionStatus;
-  createdAt: Date;
+  createdAt: string;
 }

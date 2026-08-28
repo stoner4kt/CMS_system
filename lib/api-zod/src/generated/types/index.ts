@@ -10,6 +10,7 @@ export * from './activityItem';
 export * from './block';
 export * from './blockData';
 export * from './blockType';
+export * from './cloudinarySignature';
 export * from './contactSubmission';
 export * from './contactSubmissionInput';
 export * from './contactSubmissionStatus';

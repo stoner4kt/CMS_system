@@ -218,6 +218,14 @@ export interface MediaInput {
   height?: number;
 }
 
+export interface CloudinarySignature {
+  timestamp: number;
+  signature: string;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
+}
+
 export type ContactSubmissionStatus = typeof ContactSubmissionStatus[keyof typeof ContactSubmissionStatus];
 
 

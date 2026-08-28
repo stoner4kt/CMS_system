@@ -14,5 +14,5 @@ export interface Site {
   slug: string;
   template: SiteTemplate;
   settings: SiteSettings;
-  updatedAt?: Date;
+  updatedAt?: string;
 }

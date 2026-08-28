@@ -17,5 +17,5 @@ export interface Page {
   sortOrder: number;
   blocks: Block[];
   seo: PageSeo;
-  updatedAt?: Date;
+  updatedAt?: string;
 }

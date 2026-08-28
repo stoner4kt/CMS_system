@@ -1,6 +1,6 @@
-# [Project name]
+# Site Studio
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A reusable multi-client website platform with template-based public sites and a self-serve admin workspace.
 
 ## Run & Operate
 
@@ -10,6 +10,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/site-studio run dev` — run the web app (workflow supplies `PORT` and `BASE_PATH`)
 
 ## Stack
 
@@ -19,26 +20,36 @@ _Replace the heading above with the project's name, and this line with one sente
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
+- Frontend: React + Vite + Tailwind CSS + generated React Query hooks
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/site-studio/` — public preview and admin workspace
+- `artifacts/api-server/` — typed Express API and seeded preview store
+- `lib/api-spec/openapi.yaml` — API source of truth
+- `supabase/schema.sql` — production schema and RLS
+- `supabase/seed.sql` — example Northstar Studio content
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first preview uses an in-memory seeded store so the product is usable before a client connects Supabase.
+- Production ownership must be derived from the Supabase Auth session; browser input must never choose `owner_id`.
+- Templates share a portable block data model; visual differences live in template renderers.
+- Dates stay as ISO strings across the API boundary to match JSON and generated client types.
+- Zod 4 is required because the current Orval generator emits Zod 4 helpers.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Clients can preview a public site and manage its pages, templates, media, brand settings, SEO, and inbound contact submissions from one workspace.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+No additional user preferences recorded.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Regenerate API client and Zod schemas after editing `lib/api-spec/openapi.yaml`.
+- Keep Cloudinary API secrets server-only; browsers receive signed upload parameters only.
 
 ## Pointers
 

@@ -17,5 +17,5 @@ export interface Media {
   width?: number | null;
   /** @nullable */
   height?: number | null;
-  createdAt: Date;
+  createdAt: string;
 }

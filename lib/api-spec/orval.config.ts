@@ -65,7 +65,7 @@ export default defineConfig({
             response: ['bigint', 'date'],
           },
         },
-        useDates: true,
+        useDates: false,
         useBigInt: true,
       },
     },

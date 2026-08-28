@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ActivityItem {
-  id: string;
-  label: string;
-  detail: string;
-  timestamp: string;
+export interface CloudinarySignature {
+  timestamp: number;
+  signature: string;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
 }

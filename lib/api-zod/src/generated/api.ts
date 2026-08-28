@@ -28,7 +28,7 @@ export const GetDashboardResponse = zod.object({
   "id": zod.string(),
   "label": zod.string(),
   "detail": zod.string(),
-  "timestamp": zod.coerce.date()
+  "timestamp": zod.iso.datetime({"offset":true})
 }))
 })
 
@@ -36,8 +36,11 @@ export const GetDashboardResponse = zod.object({
 /**
  * @summary Get site settings
  */
+
+
+
 export const GetSiteParams = zod.object({
-  "siteId": zod.uuid()
+  "siteId": zod.coerce.string().min(1)
 })
 
 export const getSiteResponseSettingsPrimaryColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
@@ -62,15 +65,18 @@ export const GetSiteResponse = zod.object({
   "ga4MeasurementId": zod.string().regex(getSiteResponseSettingsGa4MeasurementIdRegExp).nullish(),
   "socialLinks": zod.record(zod.string(), zod.url()).optional()
 }),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
 
 
 /**
  * @summary Update site settings
  */
+
+
+
 export const UpdateSiteParams = zod.object({
-  "siteId": zod.uuid()
+  "siteId": zod.coerce.string().min(1)
 })
 
 
@@ -118,7 +124,7 @@ export const UpdateSiteResponse = zod.object({
   "ga4MeasurementId": zod.string().regex(updateSiteResponseSettingsGa4MeasurementIdRegExp).nullish(),
   "socialLinks": zod.record(zod.string(), zod.url()).optional()
 }),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
 
 
@@ -142,7 +148,7 @@ export const ListPagesResponseItem = zod.object({
   "ogImageUrl": zod.url().nullish(),
   "canonicalUrl": zod.url().nullish()
 }),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
 export const ListPagesResponse = zod.array(ListPagesResponseItem)
 
@@ -191,7 +197,7 @@ export const CreatePageResponse = zod.object({
   "ogImageUrl": zod.url().nullish(),
   "canonicalUrl": zod.url().nullish()
 }),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
 
 
@@ -219,7 +225,7 @@ export const GetPageResponse = zod.object({
   "ogImageUrl": zod.url().nullish(),
   "canonicalUrl": zod.url().nullish()
 }),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
 
 
@@ -270,7 +276,7 @@ export const UpdatePageResponse = zod.object({
   "ogImageUrl": zod.url().nullish(),
   "canonicalUrl": zod.url().nullish()
 }),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
 
 
@@ -312,7 +318,7 @@ export const PublishPageResponse = zod.object({
   "ogImageUrl": zod.url().nullish(),
   "canonicalUrl": zod.url().nullish()
 }),
-  "updatedAt": zod.coerce.date().optional()
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
 
 
@@ -327,7 +333,7 @@ export const ListMediaResponseItem = zod.object({
   "resourceType": zod.enum(['image', 'video', 'raw']),
   "width": zod.int().nullish(),
   "height": zod.int().nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.iso.datetime({"offset":true})
 })
 export const ListMediaResponse = zod.array(ListMediaResponseItem)
 
@@ -356,7 +362,19 @@ export const CreateMediaResponse = zod.object({
   "resourceType": zod.enum(['image', 'video', 'raw']),
   "width": zod.int().nullish(),
   "height": zod.int().nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.iso.datetime({"offset":true})
+})
+
+
+/**
+ * @summary Get signed Cloudinary upload parameters
+ */
+export const GetMediaUploadSignatureResponse = zod.object({
+  "timestamp": zod.int(),
+  "signature": zod.string(),
+  "apiKey": zod.string(),
+  "cloudName": zod.string(),
+  "folder": zod.string()
 })
 
 
@@ -379,7 +397,7 @@ export const ListSubmissionsResponseItem = zod.object({
   "email": zod.email(),
   "message": zod.string(),
   "status": zod.enum(['new', 'read', 'archived']),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.iso.datetime({"offset":true})
 })
 export const ListSubmissionsResponse = zod.array(ListSubmissionsResponseItem)
 
@@ -403,7 +421,7 @@ export const CreateSubmissionResponse = zod.object({
   "email": zod.email(),
   "message": zod.string(),
   "status": zod.enum(['new', 'read', 'archived']),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.iso.datetime({"offset":true})
 })
 
 

@@ -20,9 +20,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CloudinarySignature,
   ContactSubmission,
   ContactSubmissionInput,
   DashboardSummary,
+  Error,
   HealthStatus,
   Media,
   MediaInput,
@@ -951,6 +953,77 @@ export const useCreateMedia = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateMediaMutationOptions(options));
+    }
+
+export const getGetMediaUploadSignatureUrl = () => {
+
+
+
+
+  return `/api/media/signature`
+}
+
+/**
+ * @summary Get signed Cloudinary upload parameters
+ */
+export const getMediaUploadSignature = async ( options?: Parameters<typeof customFetch>[1]): Promise<CloudinarySignature> => {
+
+  return customFetch<CloudinarySignature>(getGetMediaUploadSignatureUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMediaUploadSignatureMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getMediaUploadSignature>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getMediaUploadSignature>>, TError,void, TContext> => {
+
+const mutationKey = ['getMediaUploadSignature'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getMediaUploadSignature>>, void> = () => {
+
+
+          return  getMediaUploadSignature(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetMediaUploadSignatureMutationResult = NonNullable<Awaited<ReturnType<typeof getMediaUploadSignature>>>
+
+    export type GetMediaUploadSignatureMutationError = ErrorType<Error>
+
+    /**
+ * @summary Get signed Cloudinary upload parameters
+ */
+export const useGetMediaUploadSignature = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getMediaUploadSignature>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getMediaUploadSignature>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetMediaUploadSignatureMutationOptions(options));
     }
 
 export const getDeleteMediaUrl = (mediaId: string,) => {

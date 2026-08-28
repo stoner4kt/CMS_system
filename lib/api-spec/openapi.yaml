@@ -206,6 +206,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Media"
+  /media/signature:
+    post:
+      operationId: getMediaUploadSignature
+      tags: [media]
+      summary: Get signed Cloudinary upload parameters
+      responses:
+        "200":
+          description: Signed upload parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CloudinarySignature"
+        "503":
+          description: Cloudinary is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /media/{mediaId}:
     delete:
       operationId: deleteMedia
@@ -255,7 +273,7 @@ components:
       required: true
       schema:
         type: string
-        format: uuid
+        minLength: 1
     PageId:
       name: pageId
       in: path
@@ -422,6 +440,15 @@ components:
         resourceType: { type: string, enum: [image, video, raw] }
         width: { type: integer }
         height: { type: integer }
+    CloudinarySignature:
+      type: object
+      required: [timestamp, signature, apiKey, cloudName, folder]
+      properties:
+        timestamp: { type: integer }
+        signature: { type: string }
+        apiKey: { type: string }
+        cloudName: { type: string }
+        folder: { type: string }
     ContactSubmission:
       type: object
       required: [id, name, email, message, status, createdAt]
