@@ -34,6 +34,7 @@ import type {
   PageUpdate,
   PublishPageInput,
   Site,
+  SiteInput,
   SiteUpdate
 } from './api.schemas';
 
@@ -217,6 +218,154 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
 
 
 
+
+export const getListSitesUrl = () => {
+
+
+
+
+  return `/api/sites`
+}
+
+/**
+ * @summary List sites for the current user
+ */
+export const listSites = async ( options?: Parameters<typeof customFetch>[1]): Promise<Site[]> => {
+
+  return customFetch<Site[]>(getListSitesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSitesQueryKey = () => {
+    return [
+    `/api/sites`
+    ] as const;
+    }
+
+
+export const getListSitesQueryOptions = <TData = Awaited<ReturnType<typeof listSites>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSitesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSites>>> = ({ signal }) => listSites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSitesQueryResult = NonNullable<Awaited<ReturnType<typeof listSites>>>
+export type ListSitesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List sites for the current user
+ */
+
+export function useListSites<TData = Awaited<ReturnType<typeof listSites>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSitesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSiteUrl = () => {
+
+
+
+
+  return `/api/sites`
+}
+
+/**
+ * @summary Create a site
+ */
+export const createSite = async (siteInput: SiteInput, options?: Parameters<typeof customFetch>[1]): Promise<Site> => {
+
+  return customFetch<Site>(getCreateSiteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(siteInput)
+  }
+);}
+
+
+
+
+
+export const getCreateSiteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSite>>, TError,{data: BodyType<SiteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSite>>, TError,{data: BodyType<SiteInput>}, TContext> => {
+
+const mutationKey = ['createSite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSite>>, {data: BodyType<SiteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSiteMutationResult = NonNullable<Awaited<ReturnType<typeof createSite>>>
+    export type CreateSiteMutationBody = BodyType<SiteInput>
+    export type CreateSiteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a site
+ */
+export const useCreateSite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSite>>, TError,{data: BodyType<SiteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSite>>,
+        TError,
+        {data: BodyType<SiteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSiteMutationOptions(options));
+    }
 
 export const getGetSiteUrl = (siteId: string,) => {
 
