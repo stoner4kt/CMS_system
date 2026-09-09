@@ -91,3 +91,43 @@ pnpm run typecheck
 ```
 
 The workspace uses Zod 4 because the current Orval generator emits Zod 4 helpers. Keep the generated files under `lib/api-client-react/src/generated` and `lib/api-zod/src/generated` source-controlled.
+## Supabase-backed hand-off setup
+
+Site Studio now expects Supabase to be the system of record for admin data. Apply `supabase/schema.sql` (and the seed SQL when developing with the Northstar demo) before starting the API server.
+
+### Required environment variables
+
+Server-only (`artifacts/api-server`):
+
+- `SUPABASE_URL` — Supabase project URL.
+- `SUPABASE_ANON_KEY` — used only to validate incoming user JWTs.
+- `SUPABASE_SERVICE_ROLE_KEY` — used only by the Express API server for ownership-checked data access. Never expose this to the browser.
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_UPLOAD_FOLDER` — unchanged Cloudinary signed-upload configuration.
+
+Browser (`artifacts/site-studio`):
+
+- `VITE_SUPABASE_URL` — Supabase project URL.
+- `VITE_SUPABASE_ANON_KEY` — public anon key for password login and token refresh.
+
+### Auth and multi-site behavior
+
+Admin requests require `Authorization: Bearer <Supabase access token>`. The React app signs in with Supabase email/password, persists and refreshes the session, and the shared API fetcher attaches the current token before each admin request. The API derives ownership from the verified Supabase user id and never accepts `owner_id` from client payloads.
+
+The API supports both the legacy single-site `current` routes and new multi-site routes. Use `GET /api/sites` after login to list sites for the current owner, `POST /api/sites` to create one, and scope pages/media/submissions with `/api/sites/{siteId}/...` where possible. Public contact submissions must include a verified `siteId` path/query value.
+
+### Local verification flow
+
+```bash
+pnpm install
+pnpm --filter @workspace/api-spec run codegen
+pnpm run typecheck
+pnpm run build
+PORT=3001 SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... pnpm --filter @workspace/api-server run start
+VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... PORT=5173 pnpm --filter @workspace/site-studio run dev
+```
+
+Then verify: log in at `/login`, create a site with `POST /api/sites`, edit or create a page under `/admin/pages`, publish it, view `/`, submit the contact form with a site id, and export/import content once the backup endpoints are enabled.
+
+### Deployment notes
+
+Keep the service-role key only in the server deployment environment. For Cloudflare Pages, deploy the frontend with the public `VITE_SUPABASE_*` variables and route `/api/*` to the API deployment (or migrate the app to the documented OpenNext adapter in a follow-up). The current Vite build preserves `BASE_PATH`; set it when deploying under a subpath.

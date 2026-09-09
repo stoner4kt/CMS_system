@@ -59,6 +59,29 @@ export interface Site {
   updatedAt?: string;
 }
 
+export type SiteInputTemplate = typeof SiteInputTemplate[keyof typeof SiteInputTemplate];
+
+
+export const SiteInputTemplate = {
+  modern: 'modern',
+  classic: 'classic',
+  bold: 'bold',
+  minimal: 'minimal',
+  custom: 'custom',
+} as const;
+
+export interface SiteInput {
+  /** @minLength 1 */
+  name: string;
+  /**
+     * @minLength 1
+     * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+     */
+  slug: string;
+  template?: SiteInputTemplate;
+  settings?: SiteSettings;
+}
+
 export type SiteUpdateTemplate = typeof SiteUpdateTemplate[keyof typeof SiteUpdateTemplate];
 
 

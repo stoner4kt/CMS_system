@@ -57,6 +57,7 @@ async function buildAll() {
       "onnxruntime-node",
       "@tensorflow/*",
       "@prisma/client",
+      "@supabase/supabase-js",
       "@mikro-orm/*",
       "@grpc/*",
       "@swc/*",
