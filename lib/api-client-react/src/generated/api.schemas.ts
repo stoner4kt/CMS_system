@@ -295,3 +295,5 @@ export interface DashboardSummary {
  */
 export type NotFoundResponse = Error;
 
+export type DownloadSiteBackup200 = { [key: string]: unknown };
+

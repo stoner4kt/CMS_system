@@ -15,6 +15,7 @@ export * from './contactSubmission';
 export * from './contactSubmissionInput';
 export * from './contactSubmissionStatus';
 export * from './dashboardSummary';
+export * from './downloadSiteBackup200';
 export * from './error';
 export * from './healthStatus';
 export * from './media';

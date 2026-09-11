@@ -53,6 +53,19 @@ function formatDate(value?: string) {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
 
+const publicApiBase = (import.meta.env.VITE_API_BASE_PATH as string | undefined) ?? '/api';
+
+async function publicRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${publicApiBase}${path}`, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+  });
+  const body = await response.json().catch(() => null);
+  const message = body && typeof body === 'object' && 'error' in body && typeof body.error === 'string' ? body.error : `Request failed (${response.status})`;
+  if (!response.ok) throw new Error(message);
+  return body as T;
+}
+
 function getData(data: Block['data'], key: string, fallback = '') {
   const value = data[key];
   return typeof value === 'string' ? value : fallback;
@@ -98,18 +111,49 @@ function Field({ label, value, onChange, placeholder, type = 'text', multiline =
 }
 
 function PublicPreview() {
-  const siteQuery = useGetSite(SITE_ID, { query: { queryKey: getGetSiteQueryKey(SITE_ID) } });
-  const pagesQuery = useListPages({ query: { queryKey: getListPagesQueryKey() } });
-  const submit = useCreateSubmission();
+  const publicSlug = new URLSearchParams(window.location.search).get('site') ?? fallbackSite.slug;
+  const [publicSite, setPublicSite] = useState<Site | null>(null);
+  const [publicPages, setPublicPages] = useState<Page[]>([]);
+  const [loadError, setLoadError] = useState('');
   const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [honeypot, setHoneypot] = useState('');
   const [sent, setSent] = useState(false);
-  const site = siteQuery.data ?? fallbackSite;
-  const page = pagesQuery.data?.find((item) => item.status === 'published') ?? pagesQuery.data?.[0] ?? fallbackPage;
+  const [submitPending, setSubmitPending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    Promise.all([
+      publicRequest<Site>(`/public/sites/${encodeURIComponent(publicSlug)}`),
+      publicRequest<Page[]>(`/public/sites/${encodeURIComponent(publicSlug)}/pages`),
+    ]).then(([site, pages]) => {
+      if (!cancelled) { setPublicSite(site); setPublicPages(pages); setLoadError(''); }
+    }).catch((error: unknown) => {
+      if (!cancelled) setLoadError(error instanceof Error ? error.message : 'The public site could not load.');
+    });
+    return () => { cancelled = true; };
+  }, [publicSlug]);
+  const site = publicSite ?? fallbackSite;
+  const page = publicPages.find((item) => item.status === 'published') ?? publicPages[0] ?? fallbackPage;
   const blocks = page.blocks?.length ? page.blocks : starterBlocks;
 
-  const submitContact = (event: FormEvent) => {
+  const submitContact = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    submit.mutate({ data: form }, { onSuccess: () => { setSent(true); setForm({ name: '', email: '', message: '' }); } });
+    setSubmitPending(true);
+    setSubmitError('');
+    try {
+      await publicRequest(`/public/sites/${encodeURIComponent(site.slug)}/submissions`, {
+        method: 'POST',
+        body: JSON.stringify({ ...form, website: honeypot }),
+      });
+      setSent(true);
+      setForm({ name: '', email: '', message: '' });
+      setHoneypot('');
+    } catch (error: unknown) {
+      setSubmitError(error instanceof Error ? error.message : 'Your note could not be sent.');
+    } finally {
+      setSubmitPending(false);
+    }
   };
 
   return <div data-testid="public-preview" className="min-h-[100dvh] bg-[#f6f0e6] text-[#2b2630]">
@@ -147,10 +191,10 @@ function PublicPreview() {
           </div>
         </div>
       </section>
-      <section id="contact" className="mx-auto grid max-w-6xl gap-12 px-5 py-20 md:grid-cols-[.8fr_1.2fr] md:px-10 md:py-28">
+       <section id="contact" className="mx-auto grid max-w-6xl gap-12 px-5 py-20 md:grid-cols-[.8fr_1.2fr] md:px-10 md:py-28">
         <div><p className="mb-3 font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Contact</p><h2 className="font-display text-5xl leading-[.9] tracking-tight">Let’s make<br />a good thing.</h2><p className="mt-6 max-w-sm text-sm leading-6 text-muted-foreground">For stockists, workshops, or just a question about a piece, send a note.</p></div>
         {sent ? <div data-testid="status-contact-sent" className="rounded-2xl border border-[#b9d9c7] bg-[#e8f2e9] p-8"><Check className="mb-6 text-[#2f6b57]" /><h3 className="font-display text-3xl">Note received.</h3><p className="mt-2 text-sm text-muted-foreground">We’ll be in touch soon.</p><Button variant="outline" className="mt-6" onClick={() => setSent(false)}>Send another</Button></div> :
-          <form data-testid="form-public-contact" onSubmit={submitContact} className="grid gap-5 rounded-2xl border border-card-border bg-card p-6 md:grid-cols-2 md:p-8"><Field label="Name" value={form.name} onChange={(name) => setForm({ ...form, name })} placeholder="Your name" /><Field label="Email" value={form.email} onChange={(email) => setForm({ ...form, email })} placeholder="you@example.com" type="email" /><div className="md:col-span-2"><Field label="Message" value={form.message} onChange={(message) => setForm({ ...form, message })} placeholder="What’s on your mind?" multiline /></div><div className="md:col-span-2"><Button data-testid="button-send-contact" type="submit" disabled={submit.isPending}>{submit.isPending ? 'Sending…' : 'Send note'} <ArrowUpRight size={15} /></Button></div></form>}
+           <form data-testid="form-public-contact" onSubmit={submitContact} className="grid gap-5 rounded-2xl border border-card-border bg-card p-6 md:grid-cols-2 md:p-8"><input name="website" value={honeypot} onChange={(event) => setHoneypot(event.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-10000px] h-px w-px opacity-0" /><Field label="Name" value={form.name} onChange={(name) => setForm({ ...form, name })} placeholder="Your name" /><Field label="Email" value={form.email} onChange={(email) => setForm({ ...form, email })} placeholder="you@example.com" type="email" /><div className="md:col-span-2"><Field label="Message" value={form.message} onChange={(message) => setForm({ ...form, message })} placeholder="What’s on your mind?" multiline /></div>{(submitError || loadError) && <p className="md:col-span-2 rounded-lg bg-[#fff0eb] px-3 py-2 text-xs text-destructive">{submitError || loadError}</p>}<div className="md:col-span-2"><Button data-testid="button-send-contact" type="submit" disabled={submitPending}>{submitPending ? 'Sending…' : 'Send note'} <ArrowUpRight size={15} /></Button></div></form>}
       </section>
     </main>
     <footer className="mx-auto flex max-w-6xl flex-col gap-3 border-t border-[#2b2630]/10 px-5 py-7 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between md:px-10"><span>© {new Date().getFullYear()} {site.name}</span><span>{site.settings.contactEmail}</span></footer>
@@ -309,12 +353,31 @@ function SettingsPage() {
   const siteQuery = useGetSite(SITE_ID, { query: { queryKey: getGetSiteQueryKey(SITE_ID) } });
   const updateSite = useUpdateSite();
   const [name, setName] = useState(''); const [settings, setSettings] = useState<SiteSettings>(fallbackSite.settings); const [saved, setSaved] = useState(false);
+  const [exporting, setExporting] = useState(false);
   useEffect(() => { if (siteQuery.data) { setName(siteQuery.data.name); setSettings(siteQuery.data.settings); } }, [siteQuery.data]);
   if (siteQuery.isLoading) return <LoadingPanel label="Loading site settings" />;
   if (siteQuery.isError) return <ErrorPanel onRetry={() => siteQuery.refetch()} />;
   const set = (key: keyof SiteSettings, value: string) => setSettings({ ...settings, [key]: value });
   const save = (event: FormEvent) => { event.preventDefault(); updateSite.mutate({ siteId: SITE_ID, data: { name, settings } }, { onSuccess: (site) => { queryClient.setQueryData(getGetSiteQueryKey(SITE_ID), site); setSaved(true); window.setTimeout(() => setSaved(false), 2500); } }); };
-  return <div className="reveal"><PageHeader eyebrow="Workspace / Settings" title="Site settings" description="The practical details behind the polished surface." /><form onSubmit={save} className="grid gap-6 xl:grid-cols-[1fr_300px]"><div className="space-y-6"><section className="rounded-2xl border border-card-border bg-card p-6"><div className="mb-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-muted-foreground">Identity</p><h2 className="mt-1 font-display text-2xl">Make it yours</h2></div><div className="grid gap-5 md:grid-cols-2"><Field label="Site name" value={name} onChange={setName} placeholder="Northstar Ceramics" /><Field label="Contact email" value={settings.contactEmail ?? ''} onChange={(value) => set('contactEmail', value)} placeholder="hello@example.com" type="email" /><Field label="Phone" value={settings.phone ?? ''} onChange={(value) => set('phone', value)} placeholder="(415) 555-0148" /><Field label="Address" value={settings.address ?? ''} onChange={(value) => set('address', value)} placeholder="Your studio address" /></div></section><section className="rounded-2xl border border-card-border bg-card p-6"><div className="mb-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-muted-foreground">Discovery</p><h2 className="mt-1 font-display text-2xl">Help people find you</h2></div><div className="grid gap-5"><Field label="Google Analytics 4 ID" value={settings.ga4MeasurementId ?? ''} onChange={(value) => set('ga4MeasurementId', value)} placeholder="G-XXXXXXXXXX" /><Field label="Instagram handle" value={settings.socialLinks?.instagram ?? ''} onChange={(value) => setSettings({ ...settings, socialLinks: { ...settings.socialLinks, instagram: value } })} placeholder="northstarceramics" /></div></section></div><aside className="space-y-4"><section className="rounded-2xl border border-card-border bg-card p-5"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-muted-foreground">Brand colors</p><div className="mt-5 grid grid-cols-2 gap-3"><label className="text-xs font-semibold"><input data-testid="input-primary-color" type="color" value={settings.primaryColor} onChange={(event) => set('primaryColor', event.target.value)} className="mb-2 h-16 w-full cursor-pointer rounded-xl border-0 bg-transparent" />Primary</label><label className="text-xs font-semibold"><input data-testid="input-accent-color" type="color" value={settings.accentColor} onChange={(event) => set('accentColor', event.target.value)} className="mb-2 h-16 w-full cursor-pointer rounded-xl border-0 bg-transparent" />Accent</label></div></section><section className="rounded-2xl bg-[#2b2630] p-5 text-[#f7dbaf]"><p className="font-mono-ui text-[10px] uppercase tracking-[.15em] text-[#e7a05c]">Publishing status</p><p className="mt-4 text-sm leading-6 text-[#aaa1a8]">Changes are saved to your site workspace and reflected on the public preview.</p><Button data-testid="button-save-settings" type="submit" className="mt-5 w-full" disabled={updateSite.isPending}>{updateSite.isPending ? 'Saving…' : saved ? 'Saved' : 'Save settings'} {saved ? <Check size={15} /> : <ArrowUpRight size={15} />}</Button></section></aside></form></div>;
+  const exportSite = async () => {
+    if (!supabase) return;
+    setExporting(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const response = await fetch(`${publicApiBase}/sites/${SITE_ID}/export?includeSubmissions=false`, { headers: { Authorization: `Bearer ${data.session?.access_token ?? ''}` } });
+      if (!response.ok) throw new Error('The site export could not be created.');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${siteQuery.data?.slug ?? 'site'}-backup.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  };
+  return <div className="reveal"><PageHeader eyebrow="Workspace / Settings" title="Site settings" description="The practical details behind the polished surface." /><form onSubmit={save} className="grid gap-6 xl:grid-cols-[1fr_300px]"><div className="space-y-6"><section className="rounded-2xl border border-card-border bg-card p-6"><div className="mb-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-muted-foreground">Identity</p><h2 className="mt-1 font-display text-2xl">Make it yours</h2></div><div className="grid gap-5 md:grid-cols-2"><Field label="Site name" value={name} onChange={setName} placeholder="Northstar Ceramics" /><Field label="Contact email" value={settings.contactEmail ?? ''} onChange={(value) => set('contactEmail', value)} placeholder="hello@example.com" type="email" /><Field label="Phone" value={settings.phone ?? ''} onChange={(value) => set('phone', value)} placeholder="(415) 555-0148" /><Field label="Address" value={settings.address ?? ''} onChange={(value) => set('address', value)} placeholder="Your studio address" /></div></section><section className="rounded-2xl border border-card-border bg-card p-6"><div className="mb-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-muted-foreground">Discovery</p><h2 className="mt-1 font-display text-2xl">Help people find you</h2></div><div className="grid gap-5"><Field label="Google Analytics 4 ID" value={settings.ga4MeasurementId ?? ''} onChange={(value) => set('ga4MeasurementId', value)} placeholder="G-XXXXXXXXXX" /><Field label="Instagram handle" value={settings.socialLinks?.instagram ?? ''} onChange={(value) => setSettings({ ...settings, socialLinks: { ...settings.socialLinks, instagram: value } })} placeholder="northstarceramics" /></div></section></div><aside className="space-y-4"><section className="rounded-2xl border border-card-border bg-card p-5"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-muted-foreground">Brand colors</p><div className="mt-5 grid grid-cols-2 gap-3"><label className="text-xs font-semibold"><input data-testid="input-primary-color" type="color" value={settings.primaryColor} onChange={(event) => set('primaryColor', event.target.value)} className="mb-2 h-16 w-full cursor-pointer rounded-xl border-0 bg-transparent" />Primary</label><label className="text-xs font-semibold"><input data-testid="input-accent-color" type="color" value={settings.accentColor} onChange={(event) => set('accentColor', event.target.value)} className="mb-2 h-16 w-full cursor-pointer rounded-xl border-0 bg-transparent" />Accent</label></div></section><section className="rounded-2xl bg-[#2b2630] p-5 text-[#f7dbaf]"><p className="font-mono-ui text-[10px] uppercase tracking-[.15em] text-[#e7a05c]">Publishing status</p><p className="mt-4 text-sm leading-6 text-[#aaa1a8]">Changes are saved to your site workspace and reflected on the public preview.</p><Button data-testid="button-save-settings" type="submit" className="mt-5 w-full" disabled={updateSite.isPending}>{updateSite.isPending ? 'Saving…' : saved ? 'Saved' : 'Save settings'} {saved ? <Check size={15} /> : <ArrowUpRight size={15} />}</Button><Button data-testid="button-export-site" type="button" variant="outline" className="mt-3 w-full border-[#f7dbaf]/30 bg-transparent text-[#f7dbaf] hover:border-[#f7dbaf] hover:text-[#f7dbaf]" onClick={exportSite} disabled={exporting || !supabase}>{exporting ? 'Preparing export…' : 'Export site backup'} <ArrowUpRight size={15} /></Button></section></aside></form></div>;
 }
 
 function Submissions() {

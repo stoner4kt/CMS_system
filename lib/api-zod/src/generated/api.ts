@@ -17,6 +17,110 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Get a published site's public settings
+ */
+
+
+export const getPublicSitePathSiteSlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+
+
+export const GetPublicSiteParams = zod.object({
+  "siteSlug": zod.coerce.string().min(1).regex(getPublicSitePathSiteSlugRegExp)
+})
+
+export const getPublicSiteResponseSettingsPrimaryColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const getPublicSiteResponseSettingsAccentColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const getPublicSiteResponseSettingsGa4MeasurementIdRegExp = new RegExp('^G-[A-Z0-9]+$');
+
+
+export const GetPublicSiteResponse = zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "template": zod.enum(['modern', 'classic', 'bold', 'minimal', 'custom']),
+  "settings": zod.object({
+  "logoUrl": zod.url().nullish(),
+  "faviconUrl": zod.url().nullish(),
+  "primaryColor": zod.string().regex(getPublicSiteResponseSettingsPrimaryColorRegExp),
+  "accentColor": zod.string().regex(getPublicSiteResponseSettingsAccentColorRegExp),
+  "fontFamily": zod.string(),
+  "contactEmail": zod.email().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "ga4MeasurementId": zod.string().regex(getPublicSiteResponseSettingsGa4MeasurementIdRegExp).nullish(),
+  "socialLinks": zod.record(zod.string(), zod.url()).optional()
+}),
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
+})
+
+
+/**
+ * @summary List published pages for a public site
+ */
+
+
+export const listPublicPagesPathSiteSlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+
+
+export const ListPublicPagesParams = zod.object({
+  "siteSlug": zod.coerce.string().min(1).regex(listPublicPagesPathSiteSlugRegExp)
+})
+
+export const ListPublicPagesResponseItem = zod.object({
+  "id": zod.uuid(),
+  "title": zod.string(),
+  "slug": zod.string(),
+  "status": zod.enum(['draft', 'published']),
+  "sortOrder": zod.int(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['hero', 'text-image', 'features', 'testimonials', 'faq', 'cta', 'gallery', 'contact', 'rich-text', 'spacer']),
+  "data": zod.record(zod.string(), zod.unknown())
+})),
+  "seo": zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "ogImageUrl": zod.url().nullish(),
+  "canonicalUrl": zod.url().nullish()
+}),
+  "updatedAt": zod.iso.datetime({"offset":true}).optional()
+})
+export const ListPublicPagesResponse = zod.array(ListPublicPagesResponseItem)
+
+
+/**
+ * @summary Submit a public contact form for a site
+ */
+
+
+export const createPublicSubmissionPathSiteSlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+
+
+export const CreatePublicSubmissionParams = zod.object({
+  "siteSlug": zod.coerce.string().min(1).regex(createPublicSubmissionPathSiteSlugRegExp)
+})
+
+
+
+
+
+export const CreatePublicSubmissionBody = zod.object({
+  "name": zod.string().min(1),
+  "email": zod.email(),
+  "message": zod.string().min(1)
+})
+
+export const CreatePublicSubmissionResponse = zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "email": zod.email(),
+  "message": zod.string(),
+  "status": zod.enum(['new', 'read', 'archived']),
+  "createdAt": zod.iso.datetime({"offset":true})
+})
+
+
+/**
  * @summary Get dashboard summary
  */
 export const GetDashboardResponse = zod.object({
@@ -212,6 +316,19 @@ export const UpdateSiteResponse = zod.object({
 }),
   "updatedAt": zod.iso.datetime({"offset":true}).optional()
 })
+
+
+/**
+ * @summary Export a site's content as JSON
+ */
+
+
+
+export const DownloadSiteBackupParams = zod.object({
+  "siteId": zod.coerce.string().min(1)
+})
+
+export const DownloadSiteBackupResponse = zod.record(zod.string(), zod.unknown())
 
 
 /**

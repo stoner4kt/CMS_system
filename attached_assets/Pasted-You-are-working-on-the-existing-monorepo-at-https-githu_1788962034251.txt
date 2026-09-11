@@ -1,0 +1,142 @@
+You are working on the existing monorepo at https://github.com/stoner4kt/CMS_system (Site Studio).
+
+Current state (do not break these contracts):
+- pnpm workspaces + TypeScript
+- OpenAPI source of truth: lib/api-spec/openapi.yaml
+- Generated React Query client + Zod 4 schemas (keep generated files source-controlled)
+- Frontend: artifacts/site-studio (React + Vite + Tailwind + Radix + Wouter)
+- API: artifacts/api-server (Express 5) currently backed by in-memory site-store.ts
+- Production schema + RLS already written in supabase/schema.sql
+- Templates: modern | classic | bold | minimal | custom
+- Blocks: hero, text-image, features, testimonials, faq, cta, gallery, contact, rich-text, spacer
+- Cloudinary signed uploads already modeled
+- Seeded “Northstar Studio” example content
+
+Goal: harden and finish the product for real client hand-offs. Implement the following changes in priority order. Keep the public OpenAPI response shapes stable unless a change is absolutely required (then update OpenAPI + regenerate client/Zod and update all consumers). Prefer minimal, production-grade code. Use the existing coding style, folder structure, and TypeScript strictness.
+
+============================================================
+1. REPLACE IN-MEMORY STORE WITH SUPABASE + REAL AUTH MIDDLEWARE
+============================================================
+- Create a proper Supabase client layer (server-side) using @supabase/supabase-js.
+- Add env vars: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (service role only on server).
+- Replace artifacts/api-server/src/lib/site-store.ts with a Supabase-backed implementation that:
+  - Reads/writes sites, pages, page_blocks, media, contact_submissions according to the existing OpenAPI shapes.
+  - Derives ownership exclusively from the authenticated Supabase session (auth.uid()). Never accept owner_id from the client.
+  - Supports the existing single-site preview path for backward compatibility while enabling multi-site (see #5).
+- Add Express auth middleware that:
+  - Extracts the JWT from Authorization: Bearer <token> (and optionally cookie).
+  - Validates it with Supabase.
+  - Attaches the user to req.user.
+  - Protects all admin routes (dashboard, sites, pages, media management, submissions list/update).
+  - Leaves public routes open: health, public page rendering data, contact form POST, media signature if needed for signed uploads.
+- Keep dates as ISO strings across the API boundary.
+- After changes: regenerate API client if the contract moved, run typecheck, and ensure the seeded Northstar content can still be loaded via seed.sql + real queries.
+
+============================================================
+2. WIRE ADMIN UI TO REAL SUPABASE AUTH
+============================================================
+- Install and configure @supabase/supabase-js + @supabase/auth-helpers (or the latest recommended React pattern) on the frontend.
+- Add login / logout / session management:
+  - Login page (email + password, magic link optional).
+  - Protected admin routes (dashboard, pages, media, settings, submissions).
+  - Redirect unauthenticated users to /login.
+  - Persist session and refresh tokens correctly.
+- Update the generated React Query client (or the custom fetch wrapper in lib/api-client-react) so every authenticated request sends the current access token.
+- Remove any hard-coded / seeded “always logged in” behavior.
+- Show clear error states for invalid credentials, expired sessions, and network failures.
+- After login the admin should see only the sites owned by the current user.
+
+============================================================
+3. MIGRATE FRONTEND TO NEXT.JS 15 (APP ROUTER)
+============================================================
+- Convert artifacts/site-studio from Vite + Wouter to Next.js 15 App Router.
+- Keep the same component library (Radix, Tailwind, shadcn-style UI).
+- Structure:
+  - app/(public)/… → public site renderer (template-aware, published pages only)
+  - app/(admin)/… → protected admin workspace
+  - app/login/… → auth pages
+  - Shared components, hooks, and generated API client stay in place or move under a clean src/ structure.
+- Use the official OpenNext / Next-on-Cloudflare adapter path so the app can still deploy to Cloudflare Pages later.
+- Preserve BASE_PATH / asset prefix support if the monorepo workflow needs it.
+- Ensure server components vs client components are used correctly (auth, forms, and interactive editors must be client components where required).
+- Update package.json scripts, tsconfig, and any Replit / workspace config accordingly.
+- Delete the old Vite-only config once the Next.js version is working.
+
+============================================================
+4. SITEMAP, ROBOTS.TXT, AND STRUCTURED DATA
+============================================================
+- In the public renderer (Next.js):
+  - Generate /sitemap.xml dynamically from published pages of the current site (use the site’s canonical domain).
+  - Serve /robots.txt that points to the sitemap and allows crawling of published content.
+  - Add JSON-LD structured data (Organization / WebSite / WebPage) based on SiteSettings + page SEO fields.
+  - Render correct <title>, meta description, Open Graph, and Twitter cards from the page.seo object.
+  - Only inject GA4 when the measurement ID matches the G-[A-Z0-9]+ pattern.
+
+============================================================
+5. PROPER MULTI-SITE SUPPORT
+============================================================
+- Schema already has owner_id + unique slug. Exploit it.
+- API changes (update OpenAPI if needed):
+  - List sites for the current user.
+  - Create / update / delete a site (still ownership-checked via session).
+  - All subsequent page/media/submission routes become site-scoped (e.g. /sites/{siteId}/pages …) or accept a siteId that is verified against the session.
+- Admin UI:
+  - Site switcher in the admin shell.
+  - “Create new site” flow (name + slug + template).
+  - When a user has only one site, auto-select it; when multiple, require selection.
+- Public renderer must resolve the correct site by domain or by path slug (document the chosen strategy and implement it cleanly).
+
+============================================================
+6. RATE LIMITING + SPAM PROTECTION ON CONTACT FORM
+============================================================
+- Add rate limiting on POST /submissions (or the site-scoped equivalent):
+  - Prefer a simple in-memory or Redis-backed limiter for the Express/Next API route (e.g. 5 submissions per IP per 15 minutes).
+  - Return 429 with a clear message when exceeded.
+- Add basic spam protection:
+  - Honeypot field (hidden from real users).
+  - Optional Cloudflare Turnstile or hCaptcha (make it configurable via env).
+  - Server-side validation of name, email, message length and content.
+- Log suspicious submissions for the site owner.
+
+============================================================
+7. CLOUDINARY IMAGE OPTIMIZATION / TRANSFORMATIONS
+============================================================
+- Keep signed browser uploads.
+- When registering media or when the public renderer needs images, generate optimized Cloudinary URLs (f_auto, q_auto, width/height, crop/fill as appropriate).
+- Add a small helper that turns a public_id + desired transforms into a delivery URL.
+- Use the helper in:
+  - Public template image components
+  - Admin media library thumbnails
+  - Open Graph images
+- Do not store binary media in Postgres; continue to store only public_id, url, dimensions, resource_type.
+
+============================================================
+8. BACKUP / EXPORT STORY FOR CLIENT CONTENT
+============================================================
+- Add an admin “Export site” action that produces a downloadable JSON (or ZIP) containing:
+  - Site record + settings
+  - All pages + blocks
+  - Media metadata (not the binary files)
+  - Contact submissions (optional, toggleable)
+- Add a corresponding “Import / restore” endpoint or script that can re-hydrate a site from the export (ownership still enforced).
+- Document the format so a client or agency can keep offline backups.
+- Optionally schedule a weekly automated export to a private Cloudinary folder or S3-compatible bucket (feature-flag it).
+
+============================================================
+DELIVERABLES & QUALITY BAR
+============================================================
+- Update README.md with the new local setup, env vars, auth flow, multi-site behavior, and deployment notes.
+- Keep supabase/schema.sql as the source of truth; add any new migrations as additional SQL files if the schema grows.
+- After every major step run:
+  pnpm --filter @workspace/api-spec run codegen   # if OpenAPI changed
+  pnpm run typecheck
+  pnpm run build
+- Prefer small, reviewable commits or clear PR-style change sets.
+- Do not introduce breaking changes to the public page/block data model unless absolutely necessary.
+- Security: never expose SUPABASE_SERVICE_ROLE_KEY or CLOUDINARY_API_SECRET to the browser. All ownership checks must use the verified session.
+
+When finished, provide:
+1. A short summary of what changed and which files were touched.
+2. Any new environment variables.
+3. Exact commands to run locally to verify the full flow (login → create site → edit page → publish → view public site → submit contact form → export).
+4. Updated deployment instructions (Cloudflare Pages + OpenNext preferred).

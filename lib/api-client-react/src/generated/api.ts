@@ -24,6 +24,7 @@ import type {
   ContactSubmission,
   ContactSubmissionInput,
   DashboardSummary,
+  DownloadSiteBackup200,
   Error,
   HealthStatus,
   Media,
@@ -141,6 +142,232 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetPublicSiteUrl = (siteSlug: string,) => {
+
+
+
+
+  return `/api/public/sites/${siteSlug}`
+}
+
+/**
+ * @summary Get a published site's public settings
+ */
+export const getPublicSite = async (siteSlug: string, options?: Parameters<typeof customFetch>[1]): Promise<Site> => {
+
+  return customFetch<Site>(getGetPublicSiteUrl(siteSlug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicSiteQueryKey = (siteSlug: string,) => {
+    return [
+    `/api/public/sites/${siteSlug}`
+    ] as const;
+    }
+
+
+export const getGetPublicSiteQueryOptions = <TData = Awaited<ReturnType<typeof getPublicSite>>, TError = ErrorType<NotFoundResponse>>(siteSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicSite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicSiteQueryKey(siteSlug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicSite>>> = ({ signal }) => getPublicSite(siteSlug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: siteSlug !== null && siteSlug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicSite>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicSiteQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicSite>>>
+export type GetPublicSiteQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get a published site's public settings
+ */
+
+export function useGetPublicSite<TData = Awaited<ReturnType<typeof getPublicSite>>, TError = ErrorType<NotFoundResponse>>(
+ siteSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicSite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicSiteQueryOptions(siteSlug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPublicPagesUrl = (siteSlug: string,) => {
+
+
+
+
+  return `/api/public/sites/${siteSlug}/pages`
+}
+
+/**
+ * @summary List published pages for a public site
+ */
+export const listPublicPages = async (siteSlug: string, options?: Parameters<typeof customFetch>[1]): Promise<Page[]> => {
+
+  return customFetch<Page[]>(getListPublicPagesUrl(siteSlug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPublicPagesQueryKey = (siteSlug: string,) => {
+    return [
+    `/api/public/sites/${siteSlug}/pages`
+    ] as const;
+    }
+
+
+export const getListPublicPagesQueryOptions = <TData = Awaited<ReturnType<typeof listPublicPages>>, TError = ErrorType<NotFoundResponse>>(siteSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPublicPagesQueryKey(siteSlug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPublicPages>>> = ({ signal }) => listPublicPages(siteSlug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: siteSlug !== null && siteSlug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPublicPages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPublicPagesQueryResult = NonNullable<Awaited<ReturnType<typeof listPublicPages>>>
+export type ListPublicPagesQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary List published pages for a public site
+ */
+
+export function useListPublicPages<TData = Awaited<ReturnType<typeof listPublicPages>>, TError = ErrorType<NotFoundResponse>>(
+ siteSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPublicPagesQueryOptions(siteSlug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePublicSubmissionUrl = (siteSlug: string,) => {
+
+
+
+
+  return `/api/public/sites/${siteSlug}/submissions`
+}
+
+/**
+ * @summary Submit a public contact form for a site
+ */
+export const createPublicSubmission = async (siteSlug: string,
+    contactSubmissionInput: ContactSubmissionInput, options?: Parameters<typeof customFetch>[1]): Promise<ContactSubmission> => {
+
+  return customFetch<ContactSubmission>(getCreatePublicSubmissionUrl(siteSlug),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(contactSubmissionInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePublicSubmissionMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPublicSubmission>>, TError,{siteSlug: string;data: BodyType<ContactSubmissionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPublicSubmission>>, TError,{siteSlug: string;data: BodyType<ContactSubmissionInput>}, TContext> => {
+
+const mutationKey = ['createPublicSubmission'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPublicSubmission>>, {siteSlug: string;data: BodyType<ContactSubmissionInput>}> = (props) => {
+          const {siteSlug,data} = props ?? {};
+
+          return  createPublicSubmission(siteSlug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePublicSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof createPublicSubmission>>>
+    export type CreatePublicSubmissionMutationBody = BodyType<ContactSubmissionInput>
+    export type CreatePublicSubmissionMutationError = ErrorType<Error>
+
+    /**
+ * @summary Submit a public contact form for a site
+ */
+export const useCreatePublicSubmission = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPublicSubmission>>, TError,{siteSlug: string;data: BodyType<ContactSubmissionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPublicSubmission>>,
+        TError,
+        {siteSlug: string;data: BodyType<ContactSubmissionInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePublicSubmissionMutationOptions(options));
+    }
 
 export const getGetDashboardUrl = () => {
 
@@ -515,6 +742,83 @@ export const useUpdateSite = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getUpdateSiteMutationOptions(options));
     }
+
+export const getDownloadSiteBackupUrl = (siteId: string,) => {
+
+
+
+
+  return `/api/sites/${siteId}/export`
+}
+
+/**
+ * @summary Export a site's content as JSON
+ */
+export const downloadSiteBackup = async (siteId: string, options?: Parameters<typeof customFetch>[1]): Promise<DownloadSiteBackup200> => {
+
+  return customFetch<DownloadSiteBackup200>(getDownloadSiteBackupUrl(siteId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadSiteBackupQueryKey = (siteId: string,) => {
+    return [
+    `/api/sites/${siteId}/export`
+    ] as const;
+    }
+
+
+export const getDownloadSiteBackupQueryOptions = <TData = Awaited<ReturnType<typeof downloadSiteBackup>>, TError = ErrorType<NotFoundResponse>>(siteId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadSiteBackup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadSiteBackupQueryKey(siteId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadSiteBackup>>> = ({ signal }) => downloadSiteBackup(siteId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: siteId !== null && siteId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadSiteBackup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadSiteBackupQueryResult = NonNullable<Awaited<ReturnType<typeof downloadSiteBackup>>>
+export type DownloadSiteBackupQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Export a site's content as JSON
+ */
+
+export function useDownloadSiteBackup<TData = Awaited<ReturnType<typeof downloadSiteBackup>>, TError = ErrorType<NotFoundResponse>>(
+ siteId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadSiteBackup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadSiteBackupQueryOptions(siteId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListPagesUrl = () => {
 

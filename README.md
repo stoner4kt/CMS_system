@@ -25,7 +25,7 @@ Site Studio is a reusable website starter for agencies and independent developer
 8. Install dependencies with `pnpm install`.
 9. Start the local preview from the workspace workflow, or run `pnpm --filter @workspace/site-studio run dev` with `PORT` and `BASE_PATH` set by the workflow.
 
-The preview API is intentionally seeded and in-memory for the first handoff. Replace the store in `artifacts/api-server/src/lib/site-store.ts` with Supabase queries when connecting a client project. Keep the OpenAPI response shapes unchanged so the generated hooks and UI do not need to move.
+The API uses Supabase as its system of record. Public preview reads use `/api/public/sites/{siteSlug}` and `/api/public/sites/{siteSlug}/pages`; the `?site={siteSlug}` query parameter selects a public site in the local preview. Keep the OpenAPI response shapes unchanged so the generated hooks and UI do not need to move.
 
 ## Architecture
 
@@ -114,6 +114,8 @@ Browser (`artifacts/site-studio`):
 Admin requests require `Authorization: Bearer <Supabase access token>`. The React app signs in with Supabase email/password, persists and refreshes the session, and the shared API fetcher attaches the current token before each admin request. The API derives ownership from the verified Supabase user id and never accepts `owner_id` from client payloads.
 
 The API supports both the legacy single-site `current` routes and new multi-site routes. Use `GET /api/sites` after login to list sites for the current owner, `POST /api/sites` to create one, and scope pages/media/submissions with `/api/sites/{siteId}/...` where possible. Public contact submissions must include a verified `siteId` path/query value.
+
+Public contact submissions are also available at `POST /api/public/sites/{siteSlug}/submissions`. The endpoint validates name, email, and message length, ignores honeypot submissions, and limits each IP to five submissions per fifteen minutes. The admin settings screen can export a site's content as JSON, including media metadata and optionally contact submissions.
 
 ### Local verification flow
 

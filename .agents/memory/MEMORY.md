@@ -1,0 +1,1 @@
+- [OpenAPI codegen naming](openapi-codegen.md) — avoid operation IDs that collide with Orval-generated Params exports; run codegen and typecheck after contract changes.

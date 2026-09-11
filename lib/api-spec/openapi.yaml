@@ -33,6 +33,66 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /public/sites/{siteSlug}:
+    get:
+      operationId: getPublicSite
+      tags: [sites]
+      summary: Get a published site's public settings
+      parameters:
+        - $ref: "#/components/parameters/SiteSlug"
+      responses:
+        "200":
+          description: Public site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /public/sites/{siteSlug}/pages:
+    get:
+      operationId: listPublicPages
+      tags: [pages]
+      summary: List published pages for a public site
+      parameters:
+        - $ref: "#/components/parameters/SiteSlug"
+      responses:
+        "200":
+          description: Published pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Page"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /public/sites/{siteSlug}/submissions:
+    post:
+      operationId: createPublicSubmission
+      tags: [submissions]
+      summary: Submit a public contact form for a site
+      parameters:
+        - $ref: "#/components/parameters/SiteSlug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactSubmissionInput"
+      responses:
+        "201":
+          description: Submission received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactSubmission"
+        "429":
+          description: Submission rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /dashboard:
     get:
       operationId: getDashboard
@@ -111,6 +171,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Site"
+  /sites/{siteId}/export:
+    get:
+      operationId: downloadSiteBackup
+      tags: [sites]
+      summary: Export a site's content as JSON
+      parameters:
+        - $ref: "#/components/parameters/SiteId"
+      responses:
+        "200":
+          description: Site backup
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          $ref: "#/components/responses/NotFound"
   /pages:
     get:
       operationId: listPages
@@ -305,6 +382,14 @@ components:
       schema:
         type: string
         minLength: 1
+    SiteSlug:
+      name: siteSlug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
     PageId:
       name: pageId
       in: path

@@ -13,6 +13,7 @@ import type {
   SiteUpdate,
 } from "@workspace/api-zod";
 import { getSupabaseAdmin } from "./supabase";
+import { cloudinaryDeliveryUrl } from "./cloudinary";
 
 const iso = (value: string | null | undefined) => value ?? new Date().toISOString();
 const notNull = <T>(value: T | null | undefined, fallback: T): T => value ?? fallback;
@@ -40,6 +41,13 @@ const siteQuery = async (userId: string, siteId = "current") => {
   return siteId === "current" ? query.order("updated_at", { ascending: false }).limit(1).maybeSingle() : query.eq("id", siteId).maybeSingle();
 };
 
+const pagesForSite = async (siteId: string, publishedOnly = false) => {
+  let query = (await getSupabaseAdmin()).from("pages").select("id,title,slug,status,sort_order,seo,updated_at,page_blocks(id,block_type,sort_order,data)").eq("site_id", siteId).order("sort_order", { ascending: true });
+  if (publishedOnly) query = query.eq("status", "published");
+  const { data, error } = await query;
+  return assertData(data as DbPage[] | null, error).map(pageFromDb);
+};
+
 export const siteStore = {
   async listSites(userId: string) {
     const { data, error } = await (await getSupabaseAdmin()).from("sites").select("id,name,slug,template,settings,updated_at").eq("owner_id", userId).order("updated_at", { ascending: false });
@@ -48,6 +56,10 @@ export const siteStore = {
   async getSite(userId: string, siteId = "current") {
     const { data, error } = await siteQuery(userId, siteId);
     return error ? undefined : data ? siteFromDb(data as DbSite) : undefined;
+  },
+  async getPublicSite(slug: string) {
+    const { data, error } = await (await getSupabaseAdmin()).from("sites").select("id,name,slug,template,settings,updated_at").eq("slug", slug).maybeSingle();
+    return error || !data ? undefined : siteFromDb(data as DbSite);
   },
   async createSite(userId: string, input: { name: string; slug: string; template?: Site["template"]; settings?: Site["settings"] }) {
     const { data, error } = await (await getSupabaseAdmin()).from("sites").insert({ owner_id: userId, name: input.name, slug: input.slug, template: input.template ?? "modern", settings: input.settings ?? {} }).select("id,name,slug,template,settings,updated_at").single();
@@ -62,10 +74,11 @@ export const siteStore = {
   async listPages(userId: string, siteId = "current", publishedOnly = false) {
     const site = await this.getSite(userId, siteId);
     if (!site) return [];
-    let query = (await getSupabaseAdmin()).from("pages").select("id,title,slug,status,sort_order,seo,updated_at,page_blocks(id,block_type,sort_order,data)").eq("site_id", site.id).order("sort_order", { ascending: true });
-    if (publishedOnly) query = query.eq("status", "published");
-    const { data, error } = await query;
-    return assertData(data as DbPage[] | null, error).map(pageFromDb);
+    return pagesForSite(site.id, publishedOnly);
+  },
+  async listPublicPages(slug: string) {
+    const site = await this.getPublicSite(slug);
+    return site ? pagesForSite(site.id, true) : [];
   },
   async getPage(userId: string, pageId: string) {
     const { data, error } = await (await getSupabaseAdmin()).from("pages").select("id,title,slug,status,sort_order,seo,updated_at,page_blocks(id,block_type,sort_order,data),sites!inner(owner_id)").eq("id", pageId).eq("sites.owner_id", userId).maybeSingle();
@@ -99,9 +112,31 @@ export const siteStore = {
   async deletePage(userId: string, id: string) { const page = await this.getPage(userId, id); if (!page) return false; const { error } = await (await getSupabaseAdmin()).from("pages").delete().eq("id", id); if (error) throw new Error(error.message); return true; },
   async publishPage(userId: string, id: string, status: Page["status"]) { return this.updatePage(userId, id, { status } as PageUpdate); },
   async listMedia(userId: string, siteId = "current") { const site = await this.getSite(userId, siteId); if (!site) return []; const { data, error } = await (await getSupabaseAdmin()).from("media").select("id,name,public_id,url,resource_type,width,height,created_at").eq("site_id", site.id).order("created_at", { ascending: false }); return assertData(data as DbMedia[] | null, error).map(mediaFromDb); },
-  async createMedia(userId: string, siteId: string, input: MediaInput) { const site = await this.getSite(userId, siteId); if (!site) return undefined; const { data, error } = await (await getSupabaseAdmin()).from("media").insert({ site_id: site.id, name: input.name, public_id: input.publicId, url: input.url, resource_type: input.resourceType, width: notNull(input.width, null), height: notNull(input.height, null) }).select("id,name,public_id,url,resource_type,width,height,created_at").single(); return mediaFromDb(assertData(data as DbMedia | null, error)); },
+  async createMedia(userId: string, siteId: string, input: MediaInput) { const site = await this.getSite(userId, siteId); if (!site) return undefined; const optimizedUrl = cloudinaryDeliveryUrl(input.publicId, input.resourceType, { width: input.width ?? undefined, height: input.height ?? undefined, crop: input.width && input.height ? "fill" : "limit" }); const { data, error } = await (await getSupabaseAdmin()).from("media").insert({ site_id: site.id, name: input.name, public_id: input.publicId, url: optimizedUrl ?? input.url, resource_type: input.resourceType, width: notNull(input.width, null), height: notNull(input.height, null) }).select("id,name,public_id,url,resource_type,width,height,created_at").single(); return mediaFromDb(assertData(data as DbMedia | null, error)); },
   async deleteMedia(userId: string, id: string) { const { data } = await (await getSupabaseAdmin()).from("media").select("id,sites!inner(owner_id)").eq("id", id).eq("sites.owner_id", userId).maybeSingle(); if (!data) return false; const { error } = await (await getSupabaseAdmin()).from("media").delete().eq("id", id); if (error) throw new Error(error.message); return true; },
   async listSubmissions(userId: string, siteId = "current") { const site = await this.getSite(userId, siteId); if (!site) return []; const { data, error } = await (await getSupabaseAdmin()).from("contact_submissions").select("id,name,email,message,status,created_at").eq("site_id", site.id).order("created_at", { ascending: false }); return assertData(data as DbSubmission[] | null, error).map(submissionFromDb); },
   async createSubmission(siteId: string, input: ContactSubmissionInput) { const { data, error } = await (await getSupabaseAdmin()).from("contact_submissions").insert({ site_id: siteId, name: input.name, email: input.email, message: input.message, status: "new" }).select("id,name,email,message,status,created_at").single(); return submissionFromDb(assertData(data as DbSubmission | null, error)); },
+  async createPublicSubmission(slug: string, input: ContactSubmissionInput) {
+    const site = await this.getPublicSite(slug);
+    if (!site) return undefined;
+    return this.createSubmission(site.id, input);
+  },
+  async exportSite(userId: string, siteId = "current", includeSubmissions = false) {
+    const site = await this.getSite(userId, siteId);
+    if (!site) return undefined;
+    const [pages, media, submissions] = await Promise.all([
+      this.listPages(userId, site.id),
+      this.listMedia(userId, site.id),
+      includeSubmissions ? this.listSubmissions(userId, site.id) : Promise.resolve(undefined),
+    ]);
+    return {
+      formatVersion: 1,
+      exportedAt: new Date().toISOString(),
+      site,
+      pages,
+      media,
+      ...(submissions ? { submissions } : {}),
+    };
+  },
   async getDashboard(userId: string, siteId = "current"): Promise<DashboardSummary> { const [pages, media, submissions] = await Promise.all([this.listPages(userId, siteId), this.listMedia(userId, siteId), this.listSubmissions(userId, siteId)]); const recentActivity: ActivityItem[] = submissions.slice(0, 5).map((s) => ({ id: s.id, label: "New submission", detail: `${s.name} sent a message`, timestamp: s.createdAt })); return { pages: pages.length, publishedPages: pages.filter((p) => p.status === "published").length, media: media.length, submissions: submissions.filter((s) => s.status === "new").length, recentActivity }; },
 };
